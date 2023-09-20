@@ -66,11 +66,11 @@ while (fread(buffer, 1, 7, infile) == 7)
 
 - `while (fread(buffer, 1, 7, infile) == 7)`: This loop reads 7 characters at a time (license plates) from the input file (infile) into the buffer. The loop continues until it can read 7 characters (the assumption here is that each license plate is 7 characters long).
 
-- `buffer[6] = '\0';`: This line replaces the newline character (\n) at the end of the license plate with a nul terminator (\0) to ensure the string is properly terminated. Since the file imported and saved into buffer is external, its lines end in '\n' and not '\0'.
+- `buffer[6] = '\0';`: This line replaces the newline character (\n) at the end of the license plate with a NUL terminator (\0) to ensure the string is properly terminated. Since the file imported and saved into buffer is external, its lines end in '\n' and not '\0'.
 
 > Here is the wrong line in the code. 
 
-- `plates[idx] = buffer;`: This line assigns the address of the buffer to the plates array at index `idx`. However, this is where the problem lies (the answer lies here, I'll show it further down the text). All plates elements will point to the same buffer, so you'll end up with the same license plate repeated in the array, which is what you'd get if you had executed the program as it was given to us.
+- `plates[idx] = buffer;`: This line assigns the address of the buffer to the plates array at index `idx`. However, this is where the problem lies (the answer is here, I'll show it further down the text). All plates elements will point to the same buffer, so you'll end up with the same license plate repeated in the array, which is what you'd get if you had executed the program as it was given to us.
 
 **Print License Plates:**
 
@@ -78,21 +78,42 @@ while (fread(buffer, 1, 7, infile) == 7)
 
 - `printf("%s\n", plates[i]);`: It prints each license plate from the plates array. However, due to the earlier issue, it will print the same license plate 8 times.
 
-<!-- PAREI AQUI -->
+> # Hint before the spoiler:
+
+The issue is with the line `plates[idx] = buffer;`.
+
+In C, when you assign one array (in this case, `buffer`) to another (in this case, `plates[idx]`), you are not copying the content of the array. Instead, you are copying the memory address or pointer to the original array. This means that all elements in the `plates` array end up pointing to the same memory location as the `buffer`.
+
+Here's a step-by-step explanation of why this is problematic:
+
+1. When you read a license plate from the file into the `buffer`, the characters are stored in a contiguous block of memory, and `buffer` contains the address of the start of that block.
+
+2. When you assign `plates[idx] = buffer;`, you are essentially saying, "Make `plates[idx]` point to the same memory location as `buffer`."
+
+3. Since the loop continues, the `idx` variable is incremented, and the same assignment happens for the next license plate. This means that both `plates[0]` and `plates[1]` (and so on) all point to the same memory location as `buffer`.
+
+4. When you modify the `buffer` to read a new license plate, all the pointers in the `plates` array still point to the same memory location, so they all see the same value, which is the last license plate read.
+
+In essence, all elements in the `plates` array end up pointing to the same memory location (the `buffer`), so any changes made to `buffer` affect all elements in the array. This is why you see the same license plate repeated in the array when you print it.
+
+To store different license plates correctly, you need to allocate memory for each license plate individually, so that each element in the `plates` array points to a separate memory location containing the respective license plate. This ensures that modifications to one license plate don't affect the others.
+
 
 > # Spoiler Alert!
 
-The problem with the code is that it uses the same buffer to read and store license plates, and all elements in the plates array end up pointing to the same buffer. To fix this, you should allocate memory for each license plate individually.
+The problem with the code is that it uses the same buffer to read and store license plates, and all elements in the `plates` array end up pointing to the same buffer. To fix this, you should allocate memory for each license plate individually.
 
-1. **Array of Pointers Issue:** In this code, they are using an array of character pointers or strings (`char *plates[8];`) to store license plates. However, you are using the same character buffer `buffer` to read and store the license plates repeatedly. This results in all the pointers in the `plates` array pointing to the same `buffer`, which means they all contain the same value. You need to allocate memory for each plate individually.
+1. **Array of Pointers Issue:** In this code, they are using an array of character pointers or strings (`char *plates[8];`) to store license plates. However, you are using the same character buffer `buffer` to read and store the license plates repeatedly. This results in all the pointers in the `plates` array pointing to the same `buffer`, which means they all contain the same value. You need to allocate memory for each plate to be stored individually.
 
-2. **Pointer Assignment Issue:** When you do `plates[idx] = buffer;`, you are assigning the address of `buffer` to each element in the `plates` array. As a result, all elements in the `plates` array will point to the same memory location (`buffer`). So, when you modify `buffer`, all elements in the `plates` array will reflect the same value.
+2. **Pointer Assignment Issue:** When you do `plates[idx] = buffer;`, you are assigning the address of `buffer` to each element in the `plates` array. As a result, all elements in the `plates` array will point to the same memory location (`buffer`). So, when you modify `buffer`, all elements in the `plates` array will reflect the same value, which is the last one assigned.
 
-To fix these issues, you need to allocate memory for each license plate individually and copy the content of `buffer` into each allocated memory. Here's a corrected version of your code:
+To fix these issues, you need to allocate memory for each license plate individually and copy the content of `buffer` into each allocated memory. 
 
 ```c
 #include <stdio.h>
-#include <stdlib.h> // For memory allocation functions
+// Two new libraries included
+#include <stdlib.h>
+#include <string.h> 
 
 
     while (fread(buffer, 1, 7, infile) == 7)
@@ -101,12 +122,8 @@ To fix these issues, you need to allocate memory for each license plate individu
         buffer[6] = '\0';
 
         // Allocate memory for the plate and copy the content of buffer
-        plates[idx] = (char *)malloc(7); // Allocate memory for the plate
-        if (plates[idx] == NULL)
-        {
-            perror("Memory allocation failed");
-            return 1;
-        }
+        plates[idx] = (char *)malloc(7);
+
         strcpy(plates[idx], buffer); // Copy the content of buffer to the allocated memory
         idx++;
     }
@@ -123,4 +140,4 @@ To fix these issues, you need to allocate memory for each license plate individu
 }
 ```
 
-In this corrected code, we use `malloc` to allocate memory for each license plate, and then we use `strcpy` to copy the content of `buffer` into the allocated memory. Additionally, we free the allocated memory when we are done with it using `free`. This way, each license plate is stored in its own separate memory location, and you should see different license plates printed.
+In this corrected code, we use `malloc` to allocate memory for each license plate, and then we use `strcpy` to copy the content of `buffer` into the allocated memory. Additionally, we free the allocated memory when we are done with it using `free`. This way, each license plate is stored in its own separate memory location, and you should see different license plates printed at the end.
