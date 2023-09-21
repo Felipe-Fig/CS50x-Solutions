@@ -141,3 +141,29 @@ To fix these issues, you need to allocate memory for each license plate individu
 ```
 
 In this corrected code, we use `malloc` to allocate memory for each license plate, and then we use `strcpy` to copy the content of `buffer` into the allocated memory. Additionally, we free the allocated memory when we are done with it using `free`. This way, each license plate is stored in its own separate memory location, and you should see different license plates printed at the end.
+
+# Second solution
+
+Once you understand that `buffer` is copied as an address into the `plates[]` array, you'll understand why it printed only the last plate in hte first program execution. But there's a catch. The "print" function is separate from the array value assignement function and when the code "prints", the value at `plates[idx]` is already the last plate copied to `buffer`.
+
+With this in mind, I introduced the possibility to `printf` the `plates[idx]` from inside the loop, right before the `buffer` gets it's value reassigned.
+
+Here's what I've done (and it worked)!
+
+```C
+while (fread(buffer, 1, 7, infile) == 7)
+    {
+        // Replace '\n' with '\0'
+        buffer[6] = '\0';
+
+        // Save plate number in array
+        plates[idx] = buffer;
+        // Added as test to see if it runs properly. Since the problem is 
+        // buffer changing and the plates array only saving the last
+        //address, will try this.
+        printf("%s\n", plates[idx]);
+        idx++;
+    }
+```
+
+Notice that in this case there's no need to `malloc`.
