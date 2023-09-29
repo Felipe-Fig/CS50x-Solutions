@@ -3,8 +3,12 @@
 ## Link to the exercise
 https://cs50.harvard.edu/x/2023/labs/4/smiley/
 
+## Background study
+https://paulbourke.net/dataformats/bitmaps/
+
 ## Thought question
 How do you think you represent a black pixel when using a 24-bit color BMP file?
+- All zero!
 
 Is this the same or different when mixing paints to repesent various colors?
 
