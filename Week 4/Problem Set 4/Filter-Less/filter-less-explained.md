@@ -118,11 +118,57 @@ for (int i=0, i<[height], i++)
         sepiaGreen = (0.349*image[i][j].rgbtRed)+(0.686*image[i][j].rgbtGreen)+(0.168*image[i][j].rgbtBlue);
 
         sepiaBlue = (0.272*image[i][j].rgbtRed)+(0.534*image[i][j].rgbtGreen)+(0.131*image[i][j].rgbtBlue);
-
-        if (sepiaRed )
     }
 }
 
+if (sepiaRed > 255)
+    {
+        sepiaRed = 255;
+    }
+if (sepiaGreen > 255)
+    {
+        sepiaGreen = 255;
+    }
+if (sepiaBlue > 255)
+    {
+        sepiaBlue = 255
+    }
+```
 ### Reflect
+```C
+for (int i=0, i<[height], i++)
+{
+    for (int j=0, j<[width], j++)
+    {
+        int buffer = image[i][width-j];
+        image[i][width-j] = image[i][j];
+        image[i][j] = buffer;
+    }
+}
+```
 
 ### Blur
+Assuming you have read and watched all the material available for the Blur function, we start with the following needs:
+- Copy the original image to a new array
+- Loop to calculate the average value of a given pixel
+- Save this new value to the copied array
+- Keep reading from the original array until it ends
+- Copy from the copied array into the original array for the output
+
+In terms of steps this should be easy, but we encounter a big problem when we try to calculate the average value of the pixels. This happens because the average value is calculated using the 9 nearest pixels (including the center pixel), but sometimes we get corner pixels, which don't have pixels to some of the sides.
+
+This is solved easily by hand, calculating only the value of the nearest pixels inside the image. But try doing this with code. Remember that touching extra memory could cause segmentation faults.
+
+So let's first understand how this image array is laid out and how we will calculate the average values:
+
+[IMG001]
+
+As an array of bytes, each "cell" of this array can be accessed with `array[x][y]`. 
+
+[IMG002]
+
+In order to calculate `img[1][2]` average values, all of the blue painted pixels should be measured by our algorithm. That's ok until now, but let's check the corner cases.
+
+[IMG003]
+
+In this "corner case", we should only calculate the average of the yellow blocks (img[0][0] included). But the code we write should specify not to touch the data outside the array, which is marked with highlighter.
