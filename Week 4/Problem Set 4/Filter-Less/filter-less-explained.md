@@ -161,14 +161,86 @@ This is solved easily by hand, calculating only the value of the nearest pixels 
 
 So let's first understand how this image array is laid out and how we will calculate the average values:
 
-[IMG001]
+![IMG001](https://github.com/Felipe-Fig/CS50x-Solutions/blob/ee2d293c0463a50053aa09028dd7816029f1edf2/Week%204/Problem%20Set%204/Filter-Less/IMG001.png)
 
 As an array of bytes, each "cell" of this array can be accessed with `array[x][y]`. 
 
-[IMG002]
+![IMG002](https://github.com/Felipe-Fig/CS50x-Solutions/blob/ee2d293c0463a50053aa09028dd7816029f1edf2/Week%204/Problem%20Set%204/Filter-Less/IMG002.png)
 
 In order to calculate `img[1][2]` average values, all of the blue painted pixels should be measured by our algorithm. That's ok until now, but let's check the corner cases.
 
-[IMG003]
+![IMG003](https://github.com/Felipe-Fig/CS50x-Solutions/blob/ee2d293c0463a50053aa09028dd7816029f1edf2/Week%204/Problem%20Set%204/Filter-Less/IMG003.png)
 
 In this "corner case", we should only calculate the average of the yellow blocks (img[0][0] included). But the code we write should specify not to touch the data outside the array, which is marked with highlighter.
+
+When we get to the corner case in the code, the easiest way I found was to create another nested loop. This new loop will use 2 new variables `x,y`. X and Y will be the coordinates of a square that calculates all the pixels values around the designated pixel.
+> To recap, we have a "designated pixel" which is the pixel at hand, the one we use as reference to calculate the average values of pixels around it. 
+This new `x,y` loop will "look" to the pixels around the "designated pixel" in order to make calculations. If the average is calculated with a 9x9 square, X and Y will have only 3 possible values, from 0 to 2.
+
+### Spoiler alert - Blur Answers
+```C
+void blur(int height, int width, RGBTRIPLE image[height][width])
+{
+    // Here we declare all the variables we are going to use
+    // The first is a new array to be the copy of the original
+    // The other valus will store the sum of the values in each pixel
+    // The counter will be used as a dividend, to calculate the average.
+
+    RGBTRIPLE copy[height][width];
+    double sumRed = 0;
+    double sumGreen = 0;
+    double sumBlue = 0;
+    int count = 0;
+
+    // Copies the image array into the copy array
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            copy[i][j] = image[i][j];
+        }
+    }
+
+    // Start of the loop to go through all the array, column by column, increasing the row as it ends.
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            // This is the exception which we will use to don't touch the unwanted memory.
+            for (int x = 0; x < 3; x++)
+            {
+                for (int y = 0; y < 3; y++)
+                {
+                    if (i - 1 + x < 0 || i + x > height || j - 1 + y < 0 || j + y > width)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        sumBlue += image[i - 1 + x][j - 1 + y].rgbtBlue;
+                        sumGreen += image[i - 1 + x][j - 1 + y].rgbtGreen;
+                        sumRed += image[i - 1 + x][j - 1 + y].rgbtRed;
+                        count++;
+                    }
+                }
+            }
+
+            // Stores the average
+            tmp[i][j].rgbtRed = round((double) sumRed / count);
+            tmp[i][j].rgbtGreen = round((double) sumGreen / count);
+            tmp[i][j].rgbtBlue = round((double) sumBlue / count);
+        }
+    }
+
+    // Copies the temporary image in the real image
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            image[i][j] = tmp[i][j];
+        }
+    }
+
+    return;
+}
+```
