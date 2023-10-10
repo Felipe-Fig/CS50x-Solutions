@@ -134,7 +134,15 @@ if (sepiaBlue > 255)
         sepiaBlue = 255
     }
 ```
+
 ### Reflect
+
+In order to reflect the image we should iterate through the image array and do the following:
+- save the far right pixel `image[i][width-j]` to a temporary variable (I called it buffer).
+- copy the first (far left) pixel into the last (far right) pixel.
+- copy from the temporary variable (buffer) to the first (far left) pixel.
+- and iterate.
+
 ```C
 for (int i=0, i<[height], i++)
 {
@@ -173,9 +181,46 @@ In order to calculate `img[1][2]` average values, all of the blue painted pixels
 
 In this "corner case", we should only calculate the average of the yellow blocks (img[0][0] included). But the code we write should specify not to touch the data outside the array, which is marked with highlighter.
 
-When we get to the corner case in the code, the easiest way I found was to create another nested loop. This new loop will use 2 new variables `x,y`. X and Y will be the coordinates of a square that calculates all the pixels values around the designated pixel.
+When we get to the corner case in the code, the easiest way I found was to create another nested loop. This new loop will use 2 new variables `a,b`. A and B will be the coordinates of a square that calculates all the pixels values around the designated pixel.
 > To recap, we have a "designated pixel" which is the pixel at hand, the one we use as reference to calculate the average values of pixels around it. 
-This new `x,y` loop will "look" to the pixels around the "designated pixel" in order to make calculations. If the average is calculated with a 9x9 square, X and Y will have only 3 possible values, from 0 to 2.
+
+This new `a,b` loop will "look" to the pixels around the "designated pixel" in order to make calculations. If the average is calculated with a 9x9 square, A and B will have only 3 possible values, from -1 to 1 (the same as from 0 to 2).
+
+Let's first look at `a`. "A" will designate the row (as in height). For the 9x9 box around the "designated pixel", we have 3 possibilities:
+- `a=-1` this is the row immediatlely above the "designated pixel".
+- `a=0` this is the row of the "designated pixel".
+- `a-1` this is the row below the "designated pixel".
+
+There are some cases where `a` cannot be used in the calculation (because it is out of bounds). These cases are:
+- When the "designated pixel" is on the first row of the array. In this case `a=-1` should not be calculated.
+- When the "designated pixel" is on the last row of the array. In this case `a=1` should not be calculated.
+
+The cases where the "designate pixel" is on the first/last row is when `image[i][j] -> i = 0` and `image[i][j] -> i = [height]`.
+
+To put this in code it would be `if i = 0 && a = -1 || i = [height] && a = 1`
+
+Simplifying: `if i + a < 0 || i + a > [height]`.
+
+Now let's look at `b`. "B" will designate the column (as in width). For the 9x9 box around the "designated pixel", we have 3 possibilities:
+- `b = -1` this is the column to the left of the "designated pixel".
+- `b = 0` this is the column of the "designated pixel".
+- `b = 1` this is the column to the right the "designated pixel".
+
+There are some cases where `b` cannot be used in the calculation (because it is out of bounds). These cases are:
+- When the "designated pixel" is on the first (left) column of the array. In this case `b = -1` should not be calculated.
+- When the "designated pixel" is on the last (right) column of the array. In this case `b = 1` should not be calculated.
+
+The cases where the "designate pixel" is on the left/right row is when `image[i][j] -> j = 0` and `image[i][j] -> j = [width]`.
+
+To put this in code it would be `if j = 0 && b = -1 || j = [width] && b = 1`
+
+Simplifying: `if j + b < 0 || j + b > [width]`.
+
+So, when iterating through the code, these cases should be specified as the cases where the calculation isn't done by the program in order to avoid accessing untouched memory (causing something like a segmentation fault). 
+
+These conditions should be used inside the main iterative loop, that loops through the `image[i][j]` array. More specifically, these conditions should be used inside another for loop that iterates through `a,b`, making the right calculations.
+
+In order to calculate the color value, we use the code `color = image[i][j].rgbtRed/Green/Blue`. Since the `a,b` loop goes through all the pixels in the array, we could sum the `a,b` values of all the pixels and colors. This sum will be save in the `sumRed/Green/Blue` variable.
 
 ### Spoiler alert - Blur Answers
 ```C
@@ -206,29 +251,32 @@ void blur(int height, int width, RGBTRIPLE image[height][width])
     {
         for (int j = 0; j < width; j++)
         {
-            // This is the exception which we will use to don't touch the unwanted memory.
-            for (int x = 0; x < 3; x++)
+            // sums values of the pixel and 8 neighboring ones, skips iteration if it goes outside the pic
+            for (int a = -1; a < 2; a++)
             {
-                for (int y = 0; y < 3; y++)
+                if (i + a < 0 || i + a > [height])
                 {
-                    if (i - 1 + x < 0 || i + x > height || j - 1 + y < 0 || j + y > width)
+                    continue;
+                }
+
+                for (int b = -1; b < 2; b++)
+                {
+                    if (j + b < 0 || j + b > [width])
                     {
                         continue;
                     }
-                    else
-                    {
-                        sumBlue += image[i - 1 + x][j - 1 + y].rgbtBlue;
-                        sumGreen += image[i - 1 + x][j - 1 + y].rgbtGreen;
-                        sumRed += image[i - 1 + x][j - 1 + y].rgbtRed;
-                        count++;
-                    }
+
+                    sumBlue += image[a][b].rgbtBlue;
+                    sumGreen += image[a][b].rgbtGreen;
+                    sumRed += image[a][b].rgbtRed;
+                    count++;
                 }
             }
 
             // Stores the average
-            tmp[i][j].rgbtRed = round((double) sumRed / count);
-            tmp[i][j].rgbtGreen = round((double) sumGreen / count);
-            tmp[i][j].rgbtBlue = round((double) sumBlue / count);
+            copy[i][j].rgbtRed = round((double) sumRed / count);
+            copy[i][j].rgbtGreen = round((double) sumGreen / count);
+            copy[i][j].rgbtBlue = round((double) sumBlue / count);
         }
     }
 
