@@ -70,9 +70,30 @@ for (int i=0, i>[height], i++)
         avg = (a+b+c)/3.0;
         round(avg) // has to include math.h
 
-        image[i][j].rgbtBlue = *avg;
-        image[i][j].rgbtGreen = *avg;
-        image[i][j].rgbtRed = *avg;
+        image[i][j].rgbtBlue = avg;
+        image[i][j].rgbtGreen = avg;
+        image[i][j].rgbtRed = avg;
+    }
+}
+```
+
+Another possible answer, better implemented than what I had done.
+```C
+void grayscale(int height, int width, RGBTRIPLE image[height][width])
+{
+    float rgbGray;
+
+    for (int i = 0; i < width; i++)
+    {
+        for (int j = 0; j < height; j++)
+        {
+            // averages the color intensity and then applies the same value to all the colors to get gray
+            rgbGray = round((image[j][i].rgbtBlue + image[j][i].rgbtGreen + image[j][i].rgbtRed) / 3.0);
+
+            image[j][i].rgbtBlue = rgbGray;
+            image[j][i].rgbtGreen = rgbGray;
+            image[j][i].rgbtRed = rgbGray;
+        }
     }
 }
 ```
@@ -104,11 +125,15 @@ sepiaGreen = (0.349*image[i][j].rgbtRed)+(0.686*image[i][j].rgbtGreen)+(0.168*im
 sepiaBlue = (0.272*image[i][j].rgbtRed)+(0.534*image[i][j].rgbtGreen)+(0.131*image[i][j].rgbtBlue);
 ```
 
-But no value can be greater than 255, so: 
+But no value can be greater than 255, so I've created 3 `if` statements where if onde of the sepia filters become grater than 255, it will change it's value back to 255 (which is the max possible).
 
 Final solution for Sepia:
 
 ```C
+int sepiaRed;
+int sepiaBlue;
+int sepiaGreen;
+
 for (int i=0, i<[height], i++)
 {
     for (int j=0, j<[width], j++)
@@ -133,6 +158,10 @@ if (sepiaBlue > 255)
     {
         sepiaBlue = 255
     }
+
+image[i][j].rgbtRed = sepiaRed;
+image[i][j].rgbtGreen = sepiaGreen;
+image[i][j].rgbtBlue = sepiaBlue;
 ```
 
 ### Reflect
@@ -187,9 +216,9 @@ When we get to the corner case in the code, the easiest way I found was to creat
 This new `a,b` loop will "look" to the pixels around the "designated pixel" in order to make calculations. If the average is calculated with a 9x9 square, A and B will have only 3 possible values, from -1 to 1 (the same as from 0 to 2).
 
 Let's first look at `a`. "A" will designate the row (as in height). For the 9x9 box around the "designated pixel", we have 3 possibilities:
-- `a=-1` this is the row immediatlely above the "designated pixel".
-- `a=0` this is the row of the "designated pixel".
-- `a-1` this is the row below the "designated pixel".
+- `a = -1` this is the row immediatlely above the "designated pixel".
+- `a = 0` this is the row of the "designated pixel".
+- `a = 1` this is the row below the "designated pixel".
 
 There are some cases where `a` cannot be used in the calculation (because it is out of bounds). These cases are:
 - When the "designated pixel" is on the first row of the array. In this case `a=-1` should not be calculated.
@@ -222,7 +251,7 @@ These conditions should be used inside the main iterative loop, that loops throu
 
 In order to calculate the color value, we use the code `color = image[i][j].rgbtRed/Green/Blue`. Since the `a,b` loop goes through all the pixels in the array, we could sum the `a,b` values of all the pixels and colors. This sum will be save in the `sumRed/Green/Blue` variable.
 
-### Spoiler alert - Blur Answers
+#### Spoiler alert - Blur Answers
 ```C
 void blur(int height, int width, RGBTRIPLE image[height][width])
 {
