@@ -54,26 +54,30 @@ In order to access a value inside a struct, we would have to `struct.value` to r
 When you divide two integers, the result will be an integer. In this case, it's best to divide by 3.0 (a float) and then round it. If you do this, the value will be more precise.
 
 ```C
-int a;
-int b;
-int c;
-float avg;
-
-for (int i=0, i>[height], i++)
+// Convert image to grayscale
+void grayscale(int height, int width, RGBTRIPLE image[height][width])
 {
-    for (int j=0, j>[width], j++)
+    int a;
+    int b;
+    int c;
+    float avg;
+
+    for (int i = 0; i < height; i++)
     {
-        a = image[i][j].rgbtBlue;
-        b = image[i][j].rgbtGreen;
-        c = image[i][j].rgbtRed;
+        for (int j = 0; j < width; j++)
+        {
+            a = image[i][j].rgbtBlue;
+            b = image[i][j].rgbtGreen;
+            c = image[i][j].rgbtRed;
 
-        avg = (a+b+c)/3.0;
-        round(avg) // has to include math.h
+            avg = (a+b+c)/3.0;
 
-        image[i][j].rgbtBlue = avg;
-        image[i][j].rgbtGreen = avg;
-        image[i][j].rgbtRed = avg;
+            image[i][j].rgbtBlue = round(avg);
+            image[i][j].rgbtGreen = round(avg);
+            image[i][j].rgbtRed = round(avg);
+        }
     }
+    return;
 }
 ```
 
@@ -127,41 +131,51 @@ sepiaBlue = (0.272*image[i][j].rgbtRed)+(0.534*image[i][j].rgbtGreen)+(0.131*ima
 
 But no value can be greater than 255, so I've created 3 `if` statements where if onde of the sepia filters become grater than 255, it will change it's value back to 255 (which is the max possible).
 
-Final solution for Sepia:
+The casting to `int` can result in truncation and, in some cases, may not give you the desired sepia effect. To maintain more precision during the calculations, I used the `round` function from the `math.h` library to round the values to the nearest integer. 
+
+#### Final solution for Sepia:
 
 ```C
-int sepiaRed;
-int sepiaBlue;
-int sepiaGreen;
-
-for (int i=0, i<[height], i++)
+// Limits a value to the range [0, 255]
+int limit(int value)
 {
-    for (int j=0, j<[width], j++)
+    if (value < 0)
     {
-        sepiaRed = (0.393*image[i][j].rgbtRed)+(0.769*image[i][j].rgbtGreen)+(0.189*image[i][j].rgbtBlue);
-
-        sepiaGreen = (0.349*image[i][j].rgbtRed)+(0.686*image[i][j].rgbtGreen)+(0.168*image[i][j].rgbtBlue);
-
-        sepiaBlue = (0.272*image[i][j].rgbtRed)+(0.534*image[i][j].rgbtGreen)+(0.131*image[i][j].rgbtBlue);
+        return 0;
+    }
+    else if (value > 255)
+    {
+        return 255;
+    }
+    else
+    {
+        return value;
     }
 }
 
-if (sepiaRed > 255)
+// Convert image to sepia
+void sepia(int height, int width, RGBTRIPLE image[height][width])
+{
+    int sepiaRed;
+    int sepiaBlue;
+    int sepiaGreen;
+
+    for (int i = 0; i < height; i++)
     {
-        sepiaRed = 255;
-    }
-if (sepiaGreen > 255)
-    {
-        sepiaGreen = 255;
-    }
-if (sepiaBlue > 255)
-    {
-        sepiaBlue = 255
+        for (int j = 0; j < width; j++)
+        {
+            sepiaRed = limit(round(0.393 * image[i][j].rgbtRed + 0.769 * image[i][j].rgbtGreen + 0.189 * image[i][j].rgbtBlue));
+            sepiaGreen = limit(round(0.349 * image[i][j].rgbtRed + 0.686 * image[i][j].rgbtGreen + 0.168 * image[i][j].rgbtBlue));
+            sepiaBlue = limit(round(0.272 * image[i][j].rgbtRed + 0.534 * image[i][j].rgbtGreen + 0.131 * image[i][j].rgbtBlue));
+
+            image[i][j].rgbtRed = sepiaRed;
+            image[i][j].rgbtGreen = sepiaGreen;
+            image[i][j].rgbtBlue = sepiaBlue;
+        }
     }
 
-image[i][j].rgbtRed = sepiaRed;
-image[i][j].rgbtGreen = sepiaGreen;
-image[i][j].rgbtBlue = sepiaBlue;
+    return;
+}
 ```
 
 ### Reflect
@@ -170,17 +184,22 @@ In order to reflect the image we should iterate through the image array and do t
 - save the far right pixel `image[i][width-j]` to a temporary variable (I called it buffer).
 - copy the first (far left) pixel into the last (far right) pixel.
 - copy from the temporary variable (buffer) to the first (far left) pixel.
-- and iterate.
+- and iterate through HALF the columns.
 
 ```C
-for (int i=0, i<[height], i++)
+// Reflect image horizontally
+void reflect(int height, int width, RGBTRIPLE image[height][width])
 {
-    for (int j=0, j<[width], j++)
+    for (int i = 0; i < height; i++)
     {
-        int buffer = image[i][width-j];
-        image[i][width-j] = image[i][j];
-        image[i][j] = buffer;
+        for (int j = 0; j < width / 2; j++)
+        {
+            RGBTRIPLE buffer = image[i][j];
+            image[i][j] = image[i][width - j - 1];
+            image[i][width - j - 1] = buffer;
+        }
     }
+    return;
 }
 ```
 
@@ -251,15 +270,13 @@ These conditions should be used inside the main iterative loop, that loops throu
 
 In order to calculate the color value, we use the code `color = image[i][j].rgbtRed/Green/Blue`. Since the `a,b` loop goes through all the pixels in the array, we could sum the `a,b` values of all the pixels and colors. This sum will be save in the `sumRed/Green/Blue` variable.
 
+Inside the first nested for loop I added come code to reset the sums and counter. If you don't do this, the image will be equally blurred because you are accumulating the color sums and dividing by the count for each pixel, but you are not resetting the sums and the count for each pixel. As a result, the sums are accumulating across neighboring pixels, leading to a strong blur. To fix this issue, you should reset the sumRed, sumGreen, sumBlue, and count variables to zero for each pixel before calculating the averages.
+
 #### Spoiler alert - Blur Answers
 ```C
+// Blur image
 void blur(int height, int width, RGBTRIPLE image[height][width])
 {
-    // Here we declare all the variables we are going to use
-    // The first is a new array to be the copy of the original
-    // The other valus will store the sum of the values in each pixel
-    // The counter will be used as a dividend, to calculate the average.
-
     RGBTRIPLE copy[height][width];
     double sumRed = 0;
     double sumGreen = 0;
@@ -280,24 +297,29 @@ void blur(int height, int width, RGBTRIPLE image[height][width])
     {
         for (int j = 0; j < width; j++)
         {
+            sumRed = 0;  // Reset the sums and count for each pixel
+            sumGreen = 0;
+            sumBlue = 0;
+            count = 0;
+
             // sums values of the pixel and 8 neighboring ones, skips iteration if it goes outside the pic
             for (int a = -1; a < 2; a++)
             {
-                if (i + a < 0 || i + a > [height])
+                if (i + a < 0 || i + a >= height)
                 {
                     continue;
                 }
 
                 for (int b = -1; b < 2; b++)
                 {
-                    if (j + b < 0 || j + b > [width])
+                    if (j + b < 0 || j + b >= width)
                     {
                         continue;
                     }
 
-                    sumBlue += image[a][b].rgbtBlue;
-                    sumGreen += image[a][b].rgbtGreen;
-                    sumRed += image[a][b].rgbtRed;
+                    sumBlue += image[i + a][j + b].rgbtBlue;
+                    sumGreen += image[i + a][j + b].rgbtGreen;
+                    sumRed += image[i + a][j + b].rgbtRed;
                     count++;
                 }
             }
@@ -314,10 +336,9 @@ void blur(int height, int width, RGBTRIPLE image[height][width])
     {
         for (int j = 0; j < width; j++)
         {
-            image[i][j] = tmp[i][j];
+            image[i][j] = copy[i][j];
         }
     }
-
     return;
 }
 ```
